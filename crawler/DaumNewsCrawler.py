@@ -1,20 +1,20 @@
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import time
 import requests
+import datetime
+import argparse
 from bs4 import BeautifulSoup
 
 
 def make_seed_url_list(seed_url, start_page, end_page):
-
     seed_list = []
-    for i in range(start_page, end_page+1):
+    for i in range(start_page, end_page + 1):
         seed_list.append(seed_url + str(i))
 
     return seed_list
 
 
 def extract_news_url(html):
-
     ext_url_list = []
     soup = BeautifulSoup(html, 'html.parser')
     selected_atag = soup.select('ul.list_news2 > li > a')
@@ -25,31 +25,38 @@ def extract_news_url(html):
     return ext_url_list
 
 
-def news_data_store(category, html, fd):
+def news_data_store(category, html):
+    title_tag = 'h3.tit_view'
+    summary_tag = 'div.news_view > .summary_view'
+    document_tag = 'div.article_view'
 
     soup = BeautifulSoup(html, 'html.parser')
-    title = soup.select_one('h3.tit_view').text.strip().replace('\n', ' ')
+    title = soup.select_one(title_tag).text.strip().replace('\n', ' ')
     summary = ''
     try:
-        summary = soup.select_one('div.news_view > .summary_view').text.strip().replace('\n', ' ')
+        summary = soup.select_one(summary_tag).text.strip().replace('\n', ' ')
     except AttributeError:
         print('not exist summary')
+        return
 
-    document = soup.select_one('div.article_view').text.strip().replace('\n', ' ')
+    document = soup.select_one(document_tag).text.strip().replace('\n', ' ')
 
     line = "{}\t{}\t{}\t{}\n"
-    fd.write(line.format(category, title, summary, document))
-    print(line.format(category, title, summary, document))
+
+    current = datetime.datetime.now()
+    file_name = '../data/' + category + '/' + current.strftime('%Y-%m-%d') + '.csv'
+    with open(file_name, 'a') as fd:
+        fd.write(line.format(category, title, document, summary))
+    print((line.format(category, title, document, summary)))
 
 
-def crawl(category, seed_list, interval, fd):
-
+def crawl(category, seed_list, interval):
     for seed in seed_list:
         news_url_list = extract_news_url(requests.get(seed).text)
         for news_url in news_url_list:
             print("crawl url : {}".format(news_url))
             html = requests.get(news_url).text
-            news_data_store(category, html, fd)
+            news_data_store(category, html)
             time.sleep(interval)
 
 
@@ -61,19 +68,18 @@ def crawl(category, seed_list, interval, fd):
     file_name : 수집 저장 파일 위치 + file name 
 '''
 if __name__ == '__main__':
-    seed_url = 'http://media.daum.net/breakingnews/society?page='
-    category = 'society'
-    start_page = 1
-    end_page = 1000; 
-    interval = 2
-    file_name = '/Users/unbreaks/git/seq2seq_summarization/data/daum_news.csv'
+    parser = argparse.ArgumentParser(description='Category')
 
-    fd = open(file_name, 'a')
+    parser.add_argument('-c', '--category')
+    args = parser.parse_args()
+    category = args.category
+    print(category)
+    # category = 'society'
+    seed_url = 'http://media.daum.net/breakingnews/' + category + '?page='
+    interval = 2
+    start_page = 1
+    end_page = 100000;
 
     seed_list = make_seed_url_list(seed_url, start_page, end_page)
-    crawl(category, seed_list, interval, fd)
-
-    fd.close()
-
+    crawl(category, seed_list, interval)
     print(seed_url + ' : complete')
-
