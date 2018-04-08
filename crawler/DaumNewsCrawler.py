@@ -68,7 +68,7 @@ def news_data_store(category, html, parsed_date):
     document = soup.select_one(document_tag).text.strip().replace('\n', ' ')
     line = "{}\t{}\t{}\t{}\n"
 
-    file_name = '../data/' + category + '/' + date + '_' + category + '.csv'
+    file_name = '../data/' + category + '/' + parsed_date + '_' + category + '.csv'
 
     with open(file_name, 'a') as fd:
         fd.write(line.format(category, title, document, summary))
