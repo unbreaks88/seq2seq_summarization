@@ -44,6 +44,13 @@ def extract_news_url(html: object) -> object:
     return ext_url_list
 
 
+def remove_reporter(document_list):
+    document_list[0] = re.sub('.*?\ 기자 =', "", document_list[0]).strip()
+    # re.sub('\(.*?\)', "", document_list[0]).strip()
+    # re.sub(('\[.*?\]'), "", document_list[0]).strip()
+    return document_list
+
+
 def check_email(document):
     match = re.search("([\.0-9a-zA-Z_-]+)@([0-9a-zA-Z_-]+)(\.[0-9a-zA-Z_-]+){1,2}", document)
     return (bool(match))
@@ -61,6 +68,11 @@ def get_document(documents):
                 continue
 
         document_list.append(_d.strip())
+
+    if len(document_list) == 0:
+        return
+
+    document_list = remove_reporter(document_list)
 
     return ' '.join(document_list)
 
@@ -83,6 +95,8 @@ def news_data_store(news_url, html, date):
     documents = soup.select_one(document_tag)
 
     document = get_document(documents)
+    if document is None:
+        return
     line = "{}\t{}\t{}\t{}\t{}\n"
 
     file_name = 'data/' + date + '.csv'
@@ -121,8 +135,8 @@ def get_range_date(start_date_str, end_date_str):
 
 
 def test(url):
-    html = get_html('http://v.media.daum.net/v/20180602113649756')
-    news_data_store('http://v.media.daum.net/v/20180602113649756', html, 20150505)
+    html = get_html(url)
+    news_data_store(url, html, 20150505)
 
 
 if __name__ == '__main__':
@@ -134,6 +148,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     interval = float(args.interval)
+
+
+    # test('http://v.media.daum.net/v/20180101222523901')
 
     start_page = 1
     end_page = 1000

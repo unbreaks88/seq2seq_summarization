@@ -4,6 +4,7 @@ import socket
 import requests
 # import re2
 import datetime
+import re
 
 
 def get_html(url):
@@ -40,11 +41,18 @@ def dfdfd(date_str):
 
 
 if __name__ == '__main__':
-    url = 'http://v.media.daum.net/v/20120113190307478'
-    date_str = '20180101'
-    test = dfdfd(date_str)
 
-    print(test)
+    match = re.search("([\.0-9a-zA-Z_-]+)@([0-9a-zA-Z_-]+)(\.[0-9a-zA-Z_-]+){1,2}", "fdsa@fffff.com")
+
+    print(bool(match))
+
+
+
+    # url = 'http://v.media.daum.net/v/20120113190307478'
+    # date_str = '20180101'
+    # test = dfdfd(date_str)
+    #
+    # print(test)
     # now = datetime.datetime.now()
     # print(now)
     # date = datetime.datetime.strptime(date_str, '%Y%m%d')
@@ -65,7 +73,7 @@ if __name__ == '__main__':
     # print(datetime.datetime.strptime(date_str, '%Y-%m-%d'))
 
     # date = parse_url(url)
-    print(url)
+    # print(url)
     # print(date)
     # response = get_html(url)
     # if not response.__eq__('-1'):
