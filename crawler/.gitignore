@@ -222,6 +222,7 @@ fabric.properties
 .idea/sonarlint
 
 
-#data/
+data/
+log/
 output/
 *.sh
