@@ -35,7 +35,8 @@ def make_seed_url_list(seed_url, start_page, end_page):
 
 def extract_news_url(html: object) -> object:
     ext_url_list = []
-    soup = BeautifulSoup(html, 'html.parser')
+    # soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, 'lxml')
     selected_atag = soup.select('ul.list_news2 > li > a')
 
     for atag in selected_atag:
