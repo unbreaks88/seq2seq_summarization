@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import csv
 import random
 import time
@@ -34,11 +35,12 @@ def write(filename, documents):
         for document in documents:
             file.write(document + '\n')
 
-def clean_text(text):
+
+def remove_special_character(text):
     cleaned_text = re.sub('[a-zA-Z]', '', text)
-    cleaned_text = re.sub('[\{\}\[\]\/?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]',
-                          '', cleaned_text)
+    cleaned_text = re.sub('[\{\}\[\]\/?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"▲■◇△]', '', cleaned_text)
     return cleaned_text
+
 
 def remove_reporter(contents):
     contents = re.sub('사진뉴스1', '', contents).strip()
@@ -50,8 +52,6 @@ def remove_reporter(contents):
     contents = re.sub('전형주 인턴기자', '', contents).strip()
     contents = re.sub('ⓒ 남소연', '', contents).strip()
     contents = re.sub('전형주 인턴기자', '', contents).strip()
-
-
 
 
 def make_train_data(filename):
@@ -69,8 +69,6 @@ def make_train_data(filename):
 
         if len(line) == 5 and line[1]:
             category = line[1].strip()
-            if category == 'IT':
-                continue
 
             temp_summary_list = separate_sentences('. ', '? ', '! ', '\n', '.\n')(''.join(line[4].splitlines()))
             summaries = ''.join([summary.strip() for summary in temp_summary_list[:1]])
@@ -80,45 +78,63 @@ def make_train_data(filename):
 
             contents = separate_sentences('. ', '? ', '! ', '\n', '.\n', '\t')(''.join(line[3].splitlines()))
 
-            if len(contents) > 4:
-                contents = contents[1:4]
-                if len(contents[0]) < 8:
-                    continue
+            # if len(contents) > 4:
+            #     contents = contents[:4]
+            #     if len(contents[0]) < 8:
+            #         continue
+
+            for i in range(len(contents)):
+                content = ' '.join(content.strip() for content in contents[:i])
+                if len(content) >= 200 and len(content) <= 400:
+                    contents = contents[:i]
+                    break
+
+            random_index = random.randrange(0, len(contents))
+            category_contents = copy.deepcopy(contents)
+            # category_contents[random_index] = category + ', ' + category_contents[random_index]
 
             contents = ' '.join(content.strip() for content in contents)
+            # category_contents = ' '.join(content.strip() for content in category_contents)
 
-            if len(contents) < 50:
-                continue;
-
-            p = re.compile('\【.*?\=')
-            contents = re.sub(p, '', contents).strip()
             p = re.compile('\<.*?\>')
             contents = re.sub(p, '', contents).strip()
+            # category_contents = re.sub(p, '', category_contents).strip()
             summaries = re.sub(p, '', summaries).strip()
+
+            p = re.compile('\〈.*?\〉')
+            contents = re.sub(p, '', contents).strip()
+            # category_contents = re.sub(p, '', category_contents).strip()
+            summaries = re.sub(p, '', summaries).strip()
+
             p = re.compile('\[.*?\]')
             contents = re.sub(p, "", contents).strip()
+            # category_contents = re.sub(p, '', category_contents).strip()
             summaries = re.sub(p, "", summaries).strip()
+
             p = re.compile('\【.*?\】')
             contents = re.sub(p, "", contents).strip()
+            # category_contents = re.sub(p, '', category_contents).strip()
             summaries = re.sub(p, "", summaries).strip()
+
             p = re.compile('\(.*?\)')
             contents = re.sub(p, "", contents).strip()
+            # category_contents = re.sub(p, '', category_contents).strip()
             summaries = re.sub(p, "", summaries).strip()
-            p = re.compile('.*?\ 기자 =')
-            contents = re.sub(p, "", contents).strip()
-            contents = re.sub(p, "", contents).strip()
-            # summaries = re.sub('[-=.#/?:$}]', '', summaries).strip()
+
             p = re.compile('(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)')
             contents = re.sub(p, "", contents).strip()
             contents = re.sub('[-=.#/?:$}◆⑤]', '', contents).strip()
-
-            contents = remove_reporter(contents)
+            # category_contents = re.sub(p, "", category_contents).strip()
+            # category_contents = re.sub('[-=.#/?:$}◆⑤]', '', category_contents).strip()
+            summaries = re.sub('[-=.#/?:$}]', '', summaries).strip()
 
             contents = separate_sentences('. ', '? ', '! ', '\n', '.\n')(''.join(contents))
             contents = ' '.join(content.strip() for content in contents)
-
-            contents = clean_text(contents)
-            summaries = clean_text(summaries)
+            category_contents = separate_sentences('. ', '? ', '! ', '\n', '.\n')(''.join(category_contents))
+            category_contents = ' '.join(content.strip() for content in category_contents)
+            contents = remove_special_character(contents)
+            category_contents = remove_special_character(category_contents)
+            summaries = remove_special_character(summaries)
 
             if summaries.__contains__('[') or summaries.__contains__('(') or summaries.__contains__(
                     '<') or summaries.__contains__(
@@ -126,9 +142,17 @@ def make_train_data(filename):
                 continue
             if contents.__contains__('[') or contents.__contains__('(') or contents.__contains__(
                     '<') or contents.__contains__('#') or contents.__contains__('◀') or contents.__contains__(
-                '【') or contents.__contains__('@'):
+                '【') or contents.__contains__('@') or contents.__contains__('특파원'):
                 continue
 
+
+            if len(summaries) >= 50 or len(summaries) <= 20:
+                continue;
+
+            if len(contents) >= 300 or len(contents) < 120:
+                continue;
+
+            # results.append([summaries.strip(), contents.strip(), category_contents.strip()])
             results.append([summaries.strip(), contents.strip(), (category + ', ' + contents.strip())])
 
     return results
@@ -143,7 +167,7 @@ def write_train_data(train_data_list):
         article.append(row_data[1])
         cat_article.append(row_data[2])
 
-    total_documents = len(train_data_list) - 2000
+    total_documents = len(train_data_list) - 499
     train_index = int(total_documents * 0.9)
     valid_index = int(total_documents * 0.1) + train_index
 
@@ -180,4 +204,4 @@ if __name__ == '__main__':
         print('end process file:{}'.format(file))
     print('total train_data_list size is {}'.format(len(train_data_list)))
     random.shuffle(train_data_list)
-    write_train_data(train_data_list)
+    write_train_data(train_data_list[:100000])
